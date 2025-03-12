@@ -93,7 +93,7 @@ const Home = () => {
       {
         id: 2,
         title: "평일 저녁 친선 경기 팀 모집",
-        location: "서울 강남구 역삼동",
+        location: "서울 마포구 공덕동",
         distance: "1.2km",
         time: "수요일 오후 7시",
         price: "15,000원",
@@ -117,7 +117,7 @@ const Home = () => {
     ]);
 
     // Simulate getting user location
-    setTimeout(() => setLocation("서울 강남구"), 1000);
+    setTimeout(() => setLocation("서울 마포구"), 1000);
   }, []);
 
   // 카카오맵 초기화
@@ -135,63 +135,102 @@ const Home = () => {
         return;
       }
 
-      if (!window.kakao || !window.kakao.maps) {
-        console.error("카카오맵 API가 로드되지 않았습니다.");
-        setMapError(
-          "카카오맵 API를 로드할 수 없습니다. 잠시 후 다시 시도해주세요."
-        );
-        return;
-      }
-
       try {
         console.log("카카오맵 로드 시작");
-        window.kakao.maps.load(() => {
-          try {
-            // 맵 옵션 설정
-            const options = {
-              center: new window.kakao.maps.LatLng(37.504, 127.049),
-              level: 5,
-            };
 
-            // 맵 생성
-            const kakaoMap = new window.kakao.maps.Map(mapRef.current, options);
-            console.log("카카오맵 생성 완료");
+        // 카카오맵 API가 로드되었는지 확인
+        if (
+          typeof window.kakao === "undefined" ||
+          typeof window.kakao.maps === "undefined"
+        ) {
+          console.error("카카오맵 API가 로드되지 않았습니다.");
+          setMapError(
+            "카카오맵 API를 로드할 수 없습니다. 카카오 개발자 사이트에서 현재 도메인(localhost:5173)이 등록되어 있는지 확인해주세요."
+          );
+          return;
+        }
 
-            // 맵 상태 저장
-            setMap(kakaoMap);
-
-            // 지도 크기 재설정 (지도가 보이지 않는 문제 해결)
-            setTimeout(() => {
-              if (kakaoMap && kakaoMap.relayout) {
-                console.log("지도 크기 재설정");
-                kakaoMap.relayout();
-              }
-            }, 500);
-          } catch (error) {
-            console.error("카카오맵 초기화 오류:", error);
-            setMapError("카카오맵 초기화 중 오류가 발생했습니다.");
-          }
-        });
+        // 카카오맵 API 로드
+        if (typeof window.kakao.maps.load === "function") {
+          window.kakao.maps.load(() => {
+            createMap();
+          });
+        } else {
+          // 이미 로드된 경우 바로 맵 생성
+          createMap();
+        }
       } catch (error) {
         console.error("카카오맵 로드 오류:", error);
-        setMapError("카카오맵 로드 중 오류가 발생했습니다.");
+        setMapError(
+          `카카오맵 로드 중 오류가 발생했습니다: ${
+            error instanceof Error ? error.message : "알 수 없는 오류"
+          }`
+        );
+      }
+    };
+
+    // 맵 생성 함수
+    const createMap = () => {
+      try {
+        // 맵 옵션 설정
+        const options = {
+          center: new window.kakao.maps.LatLng(37.504, 127.049),
+          level: 5,
+        };
+
+        // 맵 생성
+        const kakaoMap = new window.kakao.maps.Map(mapRef.current, options);
+        console.log("카카오맵 생성 완료");
+
+        // 맵 상태 저장
+        setMap(kakaoMap);
+
+        // 지도 크기 재설정 (지도가 보이지 않는 문제 해결)
+        setTimeout(() => {
+          if (kakaoMap && kakaoMap.relayout) {
+            console.log("지도 크기 재설정");
+            kakaoMap.relayout();
+          }
+        }, 500);
+      } catch (error) {
+        console.error("카카오맵 초기화 오류:", error);
+        setMapError(
+          `카카오맵 초기화 중 오류가 발생했습니다: ${
+            error instanceof Error ? error.message : "알 수 없는 오류"
+          }`
+        );
       }
     };
 
     // 카카오맵 API가 로드되었는지 확인하고 초기화
+    let attempts = 0;
+    const maxAttempts = 5; // 5초 동안 시도 (500ms 간격)
+
     const checkKakaoAndInitialize = () => {
-      if (window.kakao && window.kakao.maps) {
-        console.log("카카오맵 API가 이미 로드되어 있습니다.");
+      attempts++;
+      console.log(`카카오맵 API 확인 시도 ${attempts}/${maxAttempts}`);
+
+      // window.kakao 객체가 존재하는지 더 정확하게 확인
+      if (
+        typeof window.kakao !== "undefined" &&
+        typeof window.kakao.maps !== "undefined"
+      ) {
+        console.log("카카오맵 API가 로드되었습니다.");
         initializeMap();
-      } else {
+      } else if (attempts < maxAttempts) {
         console.log("카카오맵 API 로드 대기 중...");
-        // 1초 후에 다시 확인
-        setTimeout(checkKakaoAndInitialize, 1000);
+        // 500ms 후에 다시 확인
+        setTimeout(checkKakaoAndInitialize, 500);
+      } else {
+        console.error("카카오맵 API 로드 시간 초과");
+        setMapError(
+          "카카오맵 API 로드 시간이 초과되었습니다. 카카오 개발자 사이트에서 현재 도메인(localhost:5173)이 등록되어 있는지 확인하고, 페이지를 새로고침해주세요."
+        );
       }
     };
 
-    // 초기화 시작
-    checkKakaoAndInitialize();
+    // 초기화 시작 - 약간의 지연 후 시작 (스크립트 로드 시간 확보)
+    setTimeout(checkKakaoAndInitialize, 1000);
 
     // 컴포넌트 언마운트 시 정리
     return () => {
@@ -277,13 +316,15 @@ const Home = () => {
         <div className="bg-white sticky top-0 z-10 px-5 py-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-[#191F28] text-lg">풋살매치</span>
+              <span className="font-bold text-[#191F28] text-lg">
+                FS MANAGER
+              </span>
             </div>
             <div className="flex space-x-4">
-              <button className="text-[#191F28] hover:bg-[#f1f3f5] p-2 rounded-full">
+              <button className="text-[#fff] hover:bg-[#f1f3f5] p-2 rounded-full">
                 <FiSearch size={20} />
               </button>
-              <button className="text-[#191F28] hover:bg-[#f1f3f5] p-2 rounded-full">
+              <button className="text-[#fff] hover:bg-[#f1f3f5] p-2 rounded-full">
                 <FiMessageCircle size={20} />
               </button>
               {/* 모바일에서만 보이는 지도/목록 전환 버튼 */}
@@ -461,8 +502,33 @@ const Home = () => {
         style={{ minHeight: "100%" }}
       >
         {mapError ? (
-          <div className="w-full h-full flex items-center justify-center bg-gray-100 text-red-500">
-            <p>{mapError}</p>
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 p-4">
+            <div className="bg-white rounded-lg shadow-md p-6 max-w-md text-center">
+              <div className="text-red-500 mb-4 text-5xl flex justify-center">
+                <FiMapPin />
+              </div>
+              <h3 className="text-lg font-bold text-red-500 mb-2">
+                카카오맵 로드 오류
+              </h3>
+              <p className="text-gray-700 mb-4">{mapError}</p>
+              <div className="text-sm text-gray-500 mb-4">
+                <p className="mb-2">문제 해결 방법:</p>
+                <ul className="text-left list-disc pl-5">
+                  <li>
+                    카카오 개발자 사이트에서 현재 도메인(localhost:5173)이
+                    등록되어 있는지 확인하세요.
+                  </li>
+                  <li>API 키가 올바른지 확인하세요.</li>
+                  <li>브라우저 콘솔에서 추가 오류 메시지를 확인하세요.</li>
+                </ul>
+              </div>
+              <button
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
+                onClick={() => window.location.reload()}
+              >
+                페이지 새로고침
+              </button>
+            </div>
           </div>
         ) : (
           <div
@@ -480,12 +546,12 @@ const Home = () => {
 
         {/* 지도 위에 떠 있는 검색 바 */}
         <div className="absolute top-4 left-0 right-0 mx-auto w-[90%] max-w-md z-10">
-          <div className="bg-white rounded-full shadow-md p-3 flex items-center">
-            <FiSearch className="text-[#3182F6] ml-2 mr-3" />
+          <div className="bg-white rounded-full shadow-md px-4 py-3 flex items-center">
+            <FiSearch className="text-[#3182F6] mr-3" size={20} />
             <input
               type="text"
               placeholder="풋살장, 지역명 검색"
-              className="flex-1 outline-none text-[#191F28]"
+              className="flex-1 outline-none text-[#191F28] bg-transparent"
             />
           </div>
         </div>
@@ -493,19 +559,27 @@ const Home = () => {
         {/* 지도 컨트롤 버튼 */}
         <div className="absolute bottom-24 right-4 flex flex-col space-y-2 z-10">
           <button
-            className="bg-white rounded-full w-10 h-10 shadow-md flex items-center justify-center text-[#191F28]"
+            className="bg-white rounded-full w-12 h-12 shadow-md flex items-center justify-center text-[#191F28] text-xl font-bold"
             onClick={() => map && map.setLevel(map.getLevel() - 1)}
           >
             +
           </button>
           <button
-            className="bg-white rounded-full w-10 h-10 shadow-md flex items-center justify-center text-[#191F28]"
+            className="bg-white rounded-full w-12 h-12 shadow-md flex items-center justify-center text-[#191F28] text-xl font-bold"
             onClick={() => map && map.setLevel(map.getLevel() + 1)}
           >
             -
           </button>
-          <button className="bg-white rounded-full w-10 h-10 shadow-md flex items-center justify-center">
-            <FiMapPin className="text-[#3182F6]" />
+          <button
+            className="bg-white rounded-full w-12 h-12 shadow-md flex items-center justify-center"
+            onClick={() => {
+              // 현재 위치로 이동하는 기능 (실제로는 고정 위치로 이동)
+              if (map) {
+                map.setCenter(new window.kakao.maps.LatLng(37.504, 127.049));
+              }
+            }}
+          >
+            <FiMapPin className="text-[#3182F6]" size={20} />
           </button>
         </div>
       </div>
