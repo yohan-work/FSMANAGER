@@ -24,10 +24,10 @@ interface KakaoMap {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setCenter: (latlng: any) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getCenter: () => any;
+  getCenter: () => any; // 타입 오류 해결을 위해 추가
   getLevel: () => number;
   setLevel: (level: number) => void;
-  relayout: () => void;
+  relayout: () => void; // 지도 크기 재설정을 위해 추가
 }
 
 interface KakaoMarker {
@@ -47,13 +47,9 @@ interface Match {
   lng?: number;
 }
 
-// 참고: 카카오맵 API를 사용하려면 index.html에 다음 스크립트를 추가해야 합니다:
-// <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=발급받은키값&autoload=false"></script>
-
 const Home = () => {
   const [nearbyMatches, setNearbyMatches] = useState<Match[]>([]);
   const [location, setLocation] = useState<string>("로딩 중...");
-  // PC에서도 지도가 보이도록 기본값을 list로 설정
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const mapRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -124,7 +120,7 @@ const Home = () => {
     setTimeout(() => setLocation("서울 강남구"), 1000);
   }, []);
 
-  // 카카오맵 초기화 - 단일 useEffect로 통합
+  // 카카오맵 초기화
   useEffect(() => {
     // 이미 맵이 로드되었으면 중복 로드 방지
     if (map) return;
@@ -132,45 +128,25 @@ const Home = () => {
     console.log("카카오맵 초기화 시작", { mapRef: !!mapRef.current });
 
     // 맵 초기화 함수
-    const initializeMap = async () => {
+    const initializeMap = () => {
+      if (!mapRef.current) {
+        console.error("맵 컨테이너가 없습니다.");
+        setMapError("맵 컨테이너를 찾을 수 없습니다.");
+        return;
+      }
+
+      if (!window.kakao || !window.kakao.maps) {
+        console.error("카카오맵 API가 로드되지 않았습니다.");
+        setMapError(
+          "카카오맵 API를 로드할 수 없습니다. 잠시 후 다시 시도해주세요."
+        );
+        return;
+      }
+
       try {
-        // 맵 컨테이너 확인
-        if (!mapRef.current) {
-          throw new Error("맵 컨테이너가 없습니다.");
-        }
-
-        // 카카오 객체가 로드될 때까지 기다림 (최대 10초)
-        let retryCount = 0;
-        const maxRetries = 20;
-
-        while (!window.kakao && retryCount < maxRetries) {
-          console.log(
-            `카카오 객체 확인 중... (${retryCount + 1}/${maxRetries})`
-          );
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          retryCount++;
-        }
-
-        // 카카오 객체 확인
-        if (!window.kakao) {
-          console.error("window.kakao 객체가 없습니다.");
-          throw new Error(
-            "카카오 객체를 찾을 수 없습니다. index.html에 카카오맵 스크립트가 추가되어 있는지 확인하세요."
-          );
-        }
-
-        if (!window.kakao.maps) {
-          console.error("window.kakao.maps 객체가 없습니다.");
-          throw new Error("카카오맵 객체를 찾을 수 없습니다.");
-        }
-
-        console.log("카카오 객체 확인 완료:", !!window.kakao);
-
-        // 카카오맵 로드
+        console.log("카카오맵 로드 시작");
         window.kakao.maps.load(() => {
           try {
-            console.log("카카오맵 로드 시작");
-
             // 맵 옵션 설정
             const options = {
               center: new window.kakao.maps.LatLng(37.504, 127.049),
@@ -197,17 +173,25 @@ const Home = () => {
           }
         });
       } catch (error) {
-        console.error("맵 초기화 실패:", error);
-        setMapError(
-          error instanceof Error
-            ? error.message
-            : "카카오맵 초기화 중 오류가 발생했습니다."
-        );
+        console.error("카카오맵 로드 오류:", error);
+        setMapError("카카오맵 로드 중 오류가 발생했습니다.");
       }
     };
 
-    // 맵 초기화 실행
-    initializeMap();
+    // 카카오맵 API가 로드되었는지 확인하고 초기화
+    const checkKakaoAndInitialize = () => {
+      if (window.kakao && window.kakao.maps) {
+        console.log("카카오맵 API가 이미 로드되어 있습니다.");
+        initializeMap();
+      } else {
+        console.log("카카오맵 API 로드 대기 중...");
+        // 1초 후에 다시 확인
+        setTimeout(checkKakaoAndInitialize, 1000);
+      }
+    };
+
+    // 초기화 시작
+    checkKakaoAndInitialize();
 
     // 컴포넌트 언마운트 시 정리
     return () => {
@@ -236,7 +220,7 @@ const Home = () => {
 
   // 마커 생성
   useEffect(() => {
-    if (map && nearbyMatches.length > 0) {
+    if (map && nearbyMatches.length > 0 && window.kakao && window.kakao.maps) {
       // 기존 마커 제거
       markers.forEach((marker) => marker.setMap(null));
 
@@ -276,7 +260,7 @@ const Home = () => {
 
       setMarkers(newMarkers);
     }
-  }, [map, nearbyMatches]);
+  }, [map, nearbyMatches, markers]);
 
   return (
     <div className="relative flex h-screen">
@@ -483,10 +467,15 @@ const Home = () => {
         ) : (
           <div
             ref={mapRef}
-            id="kakao-map"
             className="w-full h-full bg-gray-100"
-            style={{ position: "absolute", inset: 0 }}
-          ></div>
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
         )}
 
         {/* 지도 위에 떠 있는 검색 바 */}
