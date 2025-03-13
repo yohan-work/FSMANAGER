@@ -1,10 +1,15 @@
-import AppRoutes from "./routes.tsx";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./components/pages/Home";
+import MatchDetail from "./components/pages/MatchDetail";
 
 function App() {
   return (
-    <div className="min-h-screen bg-[#f9fafb]">
-      <AppRoutes />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/matches/:id" element={<MatchDetail />} />
+      </Routes>
+    </Router>
   );
 }
 
