@@ -54,8 +54,8 @@ const Home = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [map, setMap] = useState<KakaoMap | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [markers, setMarkers] = useState<KakaoMarker[]>([]);
+  // 마커를 상태가 아닌 ref로 관리하여 무한 렌더링 방지
+  const markersRef = useRef<KakaoMarker[]>([]);
   const [mapError, setMapError] = useState<string | null>(null);
 
   // 화면 크기에 따라 기본 뷰 모드 설정 (모바일에서만 사용)
@@ -93,7 +93,7 @@ const Home = () => {
       {
         id: 2,
         title: "평일 저녁 친선 경기 팀 모집",
-        location: "서울 마포구 공덕동",
+        location: "서울 강남구 역삼동",
         distance: "1.2km",
         time: "수요일 오후 7시",
         price: "15,000원",
@@ -117,7 +117,7 @@ const Home = () => {
     ]);
 
     // Simulate getting user location
-    setTimeout(() => setLocation("서울 마포구"), 1000);
+    setTimeout(() => setLocation("서울 강남구"), 1000);
   }, []);
 
   // 카카오맵 초기화
@@ -153,11 +153,17 @@ const Home = () => {
         // 카카오맵 API 로드
         if (typeof window.kakao.maps.load === "function") {
           window.kakao.maps.load(() => {
-            createMap();
+            // 약간의 지연 후 맵 생성 (DOM이 완전히 렌더링된 후)
+            setTimeout(() => {
+              createMap();
+            }, 100);
           });
         } else {
           // 이미 로드된 경우 바로 맵 생성
-          createMap();
+          // 약간의 지연 후 맵 생성 (DOM이 완전히 렌더링된 후)
+          setTimeout(() => {
+            createMap();
+          }, 100);
         }
       } catch (error) {
         console.error("카카오맵 로드 오류:", error);
@@ -172,6 +178,45 @@ const Home = () => {
     // 맵 생성 함수
     const createMap = () => {
       try {
+        if (!mapRef.current) {
+          console.error("맵 컨테이너가 없습니다.");
+          return;
+        }
+
+        const containerWidth = mapRef.current.clientWidth;
+        const containerHeight = mapRef.current.clientHeight;
+
+        console.log("맵 컨테이너 크기:", containerWidth, containerHeight);
+
+        // 컨테이너 크기가 유효하지 않으면 고정 크기 설정 후 다시 시도
+        if (containerWidth <= 0 || containerHeight <= 0) {
+          console.log(
+            "맵 컨테이너 크기가 유효하지 않습니다. 고정 크기 설정 후 다시 시도합니다."
+          );
+
+          // 컨테이너에 명시적인 크기 설정
+          if (mapRef.current) {
+            // 모바일 여부 확인
+            const isMobile = window.innerWidth < 768;
+
+            // 모바일이면 전체 화면 크기, 데스크톱이면 계산된 크기
+            const width = isMobile
+              ? window.innerWidth
+              : window.innerWidth - 420;
+            const height = window.innerHeight;
+
+            // 인라인 스타일로 명시적 크기 설정
+            mapRef.current.style.width = `${width}px`;
+            mapRef.current.style.height = `${height}px`;
+
+            console.log("맵 컨테이너 크기 설정:", width, height);
+          }
+
+          // 약간의 지연 후 다시 시도
+          setTimeout(createMap, 100);
+          return;
+        }
+
         // 맵 옵션 설정
         const options = {
           center: new window.kakao.maps.LatLng(37.504, 127.049),
@@ -190,6 +235,16 @@ const Home = () => {
           if (kakaoMap && kakaoMap.relayout) {
             console.log("지도 크기 재설정");
             kakaoMap.relayout();
+
+            // 중앙 위치 재설정
+            kakaoMap.setCenter(new window.kakao.maps.LatLng(37.504, 127.049));
+
+            // 지도 타일 강제 로드를 위한 레벨 변경 트릭
+            const currentLevel = kakaoMap.getLevel();
+            kakaoMap.setLevel(currentLevel + 1);
+            setTimeout(() => {
+              kakaoMap.setLevel(currentLevel);
+            }, 100);
           }
         }, 500);
       } catch (error) {
@@ -204,7 +259,7 @@ const Home = () => {
 
     // 카카오맵 API가 로드되었는지 확인하고 초기화
     let attempts = 0;
-    const maxAttempts = 5; // 5초 동안 시도 (500ms 간격)
+    const maxAttempts = 10; // 5초 동안 시도 (500ms 간격)
 
     const checkKakaoAndInitialize = () => {
       attempts++;
@@ -246,22 +301,113 @@ const Home = () => {
       if (map && map.relayout) {
         // 지도 크기 변경 시 중앙 위치 유지
         const center = map.getCenter();
+
+        // 지도 크기 재설정
         map.relayout();
+
+        // 중앙 위치 복원
         map.setCenter(center);
+
+        // 지도 타일 강제 로드를 위한 레벨 변경 트릭
+        const currentLevel = map.getLevel();
+        map.setLevel(currentLevel + 1);
+        setTimeout(() => {
+          map.setLevel(currentLevel);
+        }, 100);
       }
     };
 
+    // 초기 실행
+    handleResize();
+
+    // 이벤트 리스너 등록
     window.addEventListener("resize", handleResize);
+
+    // 뷰 모드 변경 시에도 지도 크기 재설정
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+
+    if (mapRef.current) {
+      resizeObserver.observe(mapRef.current);
+    }
+
     return () => {
       window.removeEventListener("resize", handleResize);
+      if (mapRef.current) {
+        resizeObserver.unobserve(mapRef.current);
+      }
+      resizeObserver.disconnect();
     };
   }, [map]);
 
-  // 마커 생성
+  // 뷰 모드 변경 시 지도 크기 재설정
+  useEffect(() => {
+    if (!map) return;
+
+    // 약간의 지연 후 지도 크기 재설정 (DOM 업데이트 후)
+    const timer = setTimeout(() => {
+      if (map.relayout) {
+        console.log("뷰 모드 변경으로 지도 크기 재설정");
+
+        // 맵 컨테이너 크기 확인
+        if (mapRef.current) {
+          const containerWidth = mapRef.current.clientWidth;
+          const containerHeight = mapRef.current.clientHeight;
+          console.log(
+            "뷰 모드 변경 후 맵 컨테이너 크기:",
+            containerWidth,
+            containerHeight
+          );
+
+          // 컨테이너 크기가 유효하지 않으면 고정 크기 설정
+          if (containerWidth <= 0 || containerHeight <= 0) {
+            console.log(
+              "맵 컨테이너 크기가 유효하지 않습니다. 고정 크기 설정 후 재시도합니다."
+            );
+
+            // 모바일 여부 확인
+            const isMobile = window.innerWidth < 768;
+
+            // 모바일이면 전체 화면 크기, 데스크톱이면 계산된 크기
+            const width = isMobile
+              ? window.innerWidth
+              : window.innerWidth - 420;
+            const height = window.innerHeight;
+
+            // 인라인 스타일로 명시적 크기 설정
+            mapRef.current.style.width = `${width}px`;
+            mapRef.current.style.height = `${height}px`;
+
+            console.log("맵 컨테이너 크기 설정:", width, height);
+
+            // 추가 지연 후 재시도
+            setTimeout(() => {
+              if (map.relayout) {
+                const center = map.getCenter();
+                map.relayout();
+                map.setCenter(center);
+              }
+            }, 100);
+            return;
+          }
+        }
+
+        const center = map.getCenter();
+        map.relayout();
+        map.setCenter(center);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [viewMode, map]);
+
+  // 마커 생성 로직 수정
   useEffect(() => {
     if (map && nearbyMatches.length > 0 && window.kakao && window.kakao.maps) {
       // 기존 마커 제거
-      markers.forEach((marker) => marker.setMap(null));
+      markersRef.current.forEach((marker) => marker.setMap(null));
+      markersRef.current = [];
 
       // 새 마커 생성
       const newMarkers = nearbyMatches
@@ -297,19 +443,21 @@ const Home = () => {
         })
         .filter(Boolean);
 
-      setMarkers(newMarkers);
+      // 마커를 ref에 저장
+      markersRef.current = newMarkers;
     }
-  }, [map, nearbyMatches, markers]);
+  }, [map, nearbyMatches]); // markers 의존성 제거
 
   return (
-    <div className="relative flex h-screen">
+    <div className="relative flex h-screen w-full overflow-hidden">
       {/* 메인 컨텐츠 영역 - 좌측 고정 너비 */}
       <div
         className={`
           ${viewMode === "map" ? "hidden md:block" : "block"} 
-          w-full md:w-auto md:min-w-[420px] md:max-w-[420px]
+          w-full md:w-[420px] md:min-w-[420px] md:max-w-[420px]
           overflow-auto pb-16 md:pb-0 h-full
           bg-[#f9fafb] z-10
+          flex-shrink-0
         `}
       >
         {/* Header - Toss-inspired */}
@@ -321,10 +469,10 @@ const Home = () => {
               </span>
             </div>
             <div className="flex space-x-4">
-              <button className="text-[#fff] hover:bg-[#f1f3f5] p-2 rounded-full">
+              <button className="text-[#ffffff] hover:bg-[#f1f3f5] p-2 rounded-full">
                 <FiSearch size={20} />
               </button>
-              <button className="text-[#fff] hover:bg-[#f1f3f5] p-2 rounded-full">
+              <button className="text-[#ffffff] hover:bg-[#f1f3f5] p-2 rounded-full">
                 <FiMessageCircle size={20} />
               </button>
               {/* 모바일에서만 보이는 지도/목록 전환 버튼 */}
@@ -360,7 +508,7 @@ const Home = () => {
             <FiMapPin className="text-[#3182F6]" />
             <span className="font-medium text-[#191F28]">{location}</span>
           </div>
-          <button className="text-[#3182F6] text-sm font-medium hover:underline">
+          <button className="text-[#fff] text-sm font-medium hover:underline">
             변경
           </button>
         </div>
@@ -493,13 +641,13 @@ const Home = () => {
       <div
         className={`
           ${viewMode === "list" ? "hidden md:block" : "block"} 
-          fixed md:relative 
+          fixed md:static 
           top-0 left-0 right-0 bottom-0 
-          w-full md:flex-1
+          w-full md:w-[calc(100%-420px)]
           h-full
           z-0 md:z-5
         `}
-        style={{ minHeight: "100%" }}
+        style={{ minHeight: "100%", backgroundColor: "#000" }}
       >
         {mapError ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 p-4">
@@ -533,13 +681,13 @@ const Home = () => {
         ) : (
           <div
             ref={mapRef}
-            className="w-full h-full bg-gray-100"
+            id="kakao-map"
+            className="w-full h-full"
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
+              width: "100%",
+              height: "100%",
+              backgroundColor: "#f8f9fa",
+              position: "relative",
             }}
           />
         )}
