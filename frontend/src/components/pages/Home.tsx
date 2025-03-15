@@ -9,7 +9,7 @@ import {
   FiSearch,
   FiList,
   FiMap,
-  FiMenu,
+  FiPlus,
 } from "react-icons/fi";
 
 // 카카오맵 API 타입 정의
@@ -451,286 +451,320 @@ const Home = () => {
   }, [map, nearbyMatches]); // markers 의존성 제거
 
   return (
-    <div className="relative flex h-screen w-full overflow-hidden">
-      {/* 메인 컨텐츠 영역 - 좌측 고정 너비 */}
-      <div
-        className={`
-          ${viewMode === "map" ? "hidden md:block" : "block"} 
-          w-full md:w-[420px] md:min-w-[420px] md:max-w-[420px]
-          overflow-auto pb-16 md:pb-0 h-full
-          bg-[#f9fafb] z-10
-          flex-shrink-0
-        `}
-      >
-        {/* Header - Toss-inspired */}
-        <div className="bg-white sticky top-0 z-10 px-5 py-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-[#191F28] text-lg">
-                FS MANAGER
-              </span>
+    <div className="flex flex-col h-screen">
+      {/* 헤더 */}
+      <div className="bg-white border-b">
+        <div className="max-w-screen-xl mx-auto px-4 py-3">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-xl font-bold">매치</h1>
             </div>
-            <div className="flex space-x-4">
-              <button className="text-[#ffffff] hover:bg-[#f1f3f5] p-2 rounded-full">
-                <FiSearch size={20} />
-              </button>
-              <button className="text-[#ffffff] hover:bg-[#f1f3f5] p-2 rounded-full">
-                <FiMessageCircle size={20} />
-              </button>
-              {/* 모바일에서만 보이는 지도/목록 전환 버튼 */}
-              <div className="md:hidden flex border border-gray-200 rounded-lg overflow-hidden">
-                <button
-                  className={`p-2 ${
-                    viewMode === "list"
-                      ? "bg-[#3182F6] text-white"
-                      : "bg-white text-[#4E5968]"
-                  }`}
-                  onClick={() => setViewMode("list")}
-                >
-                  <FiList size={18} />
-                </button>
-                <button
-                  className={`p-2 ${
-                    viewMode === "map"
-                      ? "bg-[#3182F6] text-white"
-                      : "bg-white text-[#4E5968]"
-                  }`}
-                  onClick={() => setViewMode("map")}
-                >
-                  <FiMap size={18} />
-                </button>
+            <button
+              onClick={() => navigate("/matches/create")}
+              className="bg-[#3182F6] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#1B64DA] transition-colors"
+            >
+              <div className="flex items-center space-x-1">
+                <FiPlus />
+                <span>매치 만들기</span>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Location Bar */}
-        <div className="bg-white px-5 py-3 flex items-center justify-between border-b border-gray-100">
-          <div className="flex items-center space-x-2">
-            <FiMapPin className="text-[#3182F6]" />
-            <span className="font-medium text-[#191F28]">{location}</span>
-          </div>
-          <button className="text-[#fff] text-sm font-medium hover:underline">
-            변경
-          </button>
-        </div>
-
-        {/* Main content */}
-        <div className="px-5 py-6">
-          {/* Balance Card - Toss-inspired */}
-          <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-bold text-[#191F28]">내 활동</h2>
-              <Link
-                to="/profile"
-                className="text-[#3182F6] text-sm font-medium hover:underline"
-              >
-                전체보기
-              </Link>
-            </div>
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-[#EBF5FF] rounded-full flex items-center justify-center">
-                <FiUsers className="text-[#3182F6]" size={18} />
-              </div>
-              <div>
-                <p className="text-[#191F28] font-medium">내 팀</p>
-                <p className="text-[#4E5968] text-sm">
-                  2개의 팀에 소속되어 있습니다
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-[#E7F9F1] rounded-full flex items-center justify-center">
-                <FiCalendar className="text-[#20C997]" size={18} />
-              </div>
-              <div>
-                <p className="text-[#191F28] font-medium">예정된 매치</p>
-                <p className="text-[#4E5968] text-sm">
-                  다가오는 매치가 없습니다
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick action buttons - Toss-inspired */}
-          <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-            <h2 className="text-lg font-bold text-[#191F28] mb-4">빠른 메뉴</h2>
-            <div className="grid grid-cols-4 gap-4">
-              <Link to="/matches/nearby" className="flex flex-col items-center">
-                <div className="w-12 h-12 rounded-full bg-[#EBF5FF] flex items-center justify-center mb-1 shadow-sm">
-                  <FiMapPin className="text-[#3182F6]" size={18} />
-                </div>
-                <span className="text-xs text-[#333D4B] font-medium">
-                  주변 매치
-                </span>
-              </Link>
-              <Link to="/teams" className="flex flex-col items-center">
-                <div className="w-12 h-12 rounded-full bg-[#E7F9F1] flex items-center justify-center mb-1 shadow-sm">
-                  <FiUsers className="text-[#20C997]" size={18} />
-                </div>
-                <span className="text-xs text-[#333D4B] font-medium">
-                  팀 관리
-                </span>
-              </Link>
-              <Link to="/matches/create" className="flex flex-col items-center">
-                <div className="w-12 h-12 rounded-full bg-[#FFF5EB] flex items-center justify-center mb-1 shadow-sm">
-                  <FiCalendar className="text-[#FF922B]" size={18} />
-                </div>
-                <span className="text-xs text-[#333D4B] font-medium">
-                  매치 생성
-                </span>
-              </Link>
-              <Link to="/payments" className="flex flex-col items-center">
-                <div className="w-12 h-12 rounded-full bg-[#F3F0FF] flex items-center justify-center mb-1 shadow-sm">
-                  <FiCreditCard className="text-[#845EF7]" size={18} />
-                </div>
-                <span className="text-xs text-[#333D4B] font-medium">정산</span>
-              </Link>
-            </div>
-          </div>
-
-          {/* Nearby matches - Toss-inspired */}
-          <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-[#191F28]">내 주변 매치</h2>
-              <Link
-                to="/matches/nearby"
-                className="text-[#3182F6] text-sm font-medium hover:underline"
-              >
-                더보기
-              </Link>
-            </div>
-
-            <div className="space-y-4">
-              {nearbyMatches.map((match) => (
-                <Link
-                  to={`/matches/${match.id}`}
-                  key={match.id}
-                  className="block"
-                >
-                  <div className="border border-gray-200 rounded-xl p-4 hover:border-[#3182F6] hover:shadow-sm transition-all">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-medium text-[#191F28]">
-                        {match.title}
-                      </h3>
-                      <span className="text-sm text-[#3182F6] font-medium">
-                        {match.distance}
-                      </span>
-                    </div>
-                    <div className="mt-2 text-sm text-[#4E5968]">
-                      {match.location}
-                    </div>
-                    <div className="mt-1 text-sm text-[#4E5968]">
-                      {match.time}
-                    </div>
-                    <div className="mt-3 flex justify-between items-center">
-                      <span className="text-sm font-medium text-[#191F28]">
-                        {match.price}
-                      </span>
-                      <div className="px-2 py-1 bg-[#F1F3F5] rounded-full text-xs font-medium text-[#333D4B]">
-                        {match.level}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* 지도 영역 - 모바일에서는 전체 화면, 데스크톱에서는 우측 영역 (남은 공간 전체) */}
-      <div
-        className={`
-          ${viewMode === "list" ? "hidden md:block" : "block"} 
-          fixed md:static 
-          top-0 left-0 right-0 bottom-0 
-          w-full md:w-[calc(100%-420px)]
-          h-full
-          z-0 md:z-5
-        `}
-        style={{ minHeight: "100%", backgroundColor: "#000" }}
-      >
-        {mapError ? (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 p-4">
-            <div className="bg-white rounded-lg shadow-md p-6 max-w-md text-center">
-              <div className="text-red-500 mb-4 text-5xl flex justify-center">
-                <FiMapPin />
+      <div className="relative flex h-screen w-full overflow-hidden">
+        {/* 메인 컨텐츠 영역 - 좌측 고정 너비 */}
+        <div
+          className={`
+            ${viewMode === "map" ? "hidden md:block" : "block"} 
+            w-full md:w-[420px] md:min-w-[420px] md:max-w-[420px]
+            overflow-auto pb-16 md:pb-0 h-full
+            bg-[#f9fafb] z-10
+            flex-shrink-0
+          `}
+        >
+          {/* Header - Toss-inspired */}
+          <div className="bg-white sticky top-0 z-10 px-5 py-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="font-bold text-[#191F28] text-lg">
+                  FS MANAGER
+                </span>
               </div>
-              <h3 className="text-lg font-bold text-red-500 mb-2">
-                카카오맵 로드 오류
-              </h3>
-              <p className="text-gray-700 mb-4">{mapError}</p>
-              <div className="text-sm text-gray-500 mb-4">
-                <p className="mb-2">문제 해결 방법:</p>
-                <ul className="text-left list-disc pl-5">
-                  <li>
-                    카카오 개발자 사이트에서 현재 도메인(-)이 등록되어 있는지
-                    확인하세요.
-                  </li>
-                  <li>API 키가 올바른지 확인하세요.</li>
-                  <li>브라우저 콘솔에서 추가 오류 메시지를 확인하세요.</li>
-                </ul>
+              <div className="flex space-x-4">
+                <button className="text-[#ffffff] hover:bg-[#f1f3f5] p-2 rounded-full">
+                  <FiSearch size={20} />
+                </button>
+                <button className="text-[#ffffff] hover:bg-[#f1f3f5] p-2 rounded-full">
+                  <FiMessageCircle size={20} />
+                </button>
+                {/* 모바일에서만 보이는 지도/목록 전환 버튼 */}
+                <div className="md:hidden flex border border-gray-200 rounded-lg overflow-hidden">
+                  <button
+                    className={`p-2 ${
+                      viewMode === "list"
+                        ? "bg-[#3182F6] text-white"
+                        : "bg-white text-[#4E5968]"
+                    }`}
+                    onClick={() => setViewMode("list")}
+                  >
+                    <FiList size={18} />
+                  </button>
+                  <button
+                    className={`p-2 ${
+                      viewMode === "map"
+                        ? "bg-[#3182F6] text-white"
+                        : "bg-white text-[#4E5968]"
+                    }`}
+                    onClick={() => setViewMode("map")}
+                  >
+                    <FiMap size={18} />
+                  </button>
+                </div>
               </div>
-              <button
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
-                onClick={() => window.location.reload()}
-              >
-                페이지 새로고침
-              </button>
             </div>
           </div>
-        ) : (
-          <div
-            ref={mapRef}
-            id="kakao-map"
-            className="w-full h-full"
-            style={{
-              width: "100%",
-              height: "100%",
-              backgroundColor: "#f8f9fa",
-              position: "relative",
-            }}
-          />
-        )}
 
-        {/* 지도 위에 떠 있는 검색 바 */}
-        <div className="absolute top-4 left-0 right-0 mx-auto w-[90%] max-w-md z-10">
-          <div className="bg-white rounded-full shadow-md px-4 py-3 flex items-center">
-            <FiSearch className="text-[#3182F6] mr-3" size={20} />
-            <input
-              type="text"
-              placeholder="풋살장, 지역명 검색"
-              className="flex-1 outline-none text-[#191F28] bg-transparent"
-            />
+          {/* Location Bar */}
+          <div className="bg-white px-5 py-3 flex items-center justify-between border-b border-gray-100">
+            <div className="flex items-center space-x-2">
+              <FiMapPin className="text-[#3182F6]" />
+              <span className="font-medium text-[#191F28]">{location}</span>
+            </div>
+            <button className="text-[#fff] text-sm font-medium hover:underline">
+              변경
+            </button>
+          </div>
+
+          {/* Main content */}
+          <div className="px-5 py-6">
+            {/* Balance Card - Toss-inspired */}
+            <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-bold text-[#191F28]">내 활동</h2>
+                <Link
+                  to="/profile"
+                  className="text-[#3182F6] text-sm font-medium hover:underline"
+                >
+                  전체보기
+                </Link>
+              </div>
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-10 h-10 bg-[#EBF5FF] rounded-full flex items-center justify-center">
+                  <FiUsers className="text-[#3182F6]" size={18} />
+                </div>
+                <div>
+                  <p className="text-[#191F28] font-medium">내 팀</p>
+                  <p className="text-[#4E5968] text-sm">
+                    2개의 팀에 소속되어 있습니다
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-[#E7F9F1] rounded-full flex items-center justify-center">
+                  <FiCalendar className="text-[#20C997]" size={18} />
+                </div>
+                <div>
+                  <p className="text-[#191F28] font-medium">예정된 매치</p>
+                  <p className="text-[#4E5968] text-sm">
+                    다가오는 매치가 없습니다
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick action buttons - Toss-inspired */}
+            <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
+              <h2 className="text-lg font-bold text-[#191F28] mb-4">
+                빠른 메뉴
+              </h2>
+              <div className="grid grid-cols-4 gap-4">
+                <Link
+                  to="/matches/nearby"
+                  className="flex flex-col items-center"
+                >
+                  <div className="w-12 h-12 rounded-full bg-[#EBF5FF] flex items-center justify-center mb-1 shadow-sm">
+                    <FiMapPin className="text-[#3182F6]" size={18} />
+                  </div>
+                  <span className="text-xs text-[#333D4B] font-medium">
+                    주변 매치
+                  </span>
+                </Link>
+                <Link to="/teams" className="flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full bg-[#E7F9F1] flex items-center justify-center mb-1 shadow-sm">
+                    <FiUsers className="text-[#20C997]" size={18} />
+                  </div>
+                  <span className="text-xs text-[#333D4B] font-medium">
+                    팀 관리
+                  </span>
+                </Link>
+                <Link
+                  to="/matches/create"
+                  className="flex flex-col items-center"
+                >
+                  <div className="w-12 h-12 rounded-full bg-[#FFF5EB] flex items-center justify-center mb-1 shadow-sm">
+                    <FiCalendar className="text-[#FF922B]" size={18} />
+                  </div>
+                  <span className="text-xs text-[#333D4B] font-medium">
+                    매치 생성
+                  </span>
+                </Link>
+                <Link to="/payments" className="flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full bg-[#F3F0FF] flex items-center justify-center mb-1 shadow-sm">
+                    <FiCreditCard className="text-[#845EF7]" size={18} />
+                  </div>
+                  <span className="text-xs text-[#333D4B] font-medium">
+                    정산
+                  </span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Nearby matches - Toss-inspired */}
+            <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-[#191F28]">
+                  내 주변 매치
+                </h2>
+                <Link
+                  to="/matches/nearby"
+                  className="text-[#3182F6] text-sm font-medium hover:underline"
+                >
+                  더보기
+                </Link>
+              </div>
+
+              <div className="space-y-4">
+                {nearbyMatches.map((match) => (
+                  <Link
+                    to={`/matches/${match.id}`}
+                    key={match.id}
+                    className="block"
+                  >
+                    <div className="border border-gray-200 rounded-xl p-4 hover:border-[#3182F6] hover:shadow-sm transition-all">
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-medium text-[#191F28]">
+                          {match.title}
+                        </h3>
+                        <span className="text-sm text-[#3182F6] font-medium">
+                          {match.distance}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-sm text-[#4E5968]">
+                        {match.location}
+                      </div>
+                      <div className="mt-1 text-sm text-[#4E5968]">
+                        {match.time}
+                      </div>
+                      <div className="mt-3 flex justify-between items-center">
+                        <span className="text-sm font-medium text-[#191F28]">
+                          {match.price}
+                        </span>
+                        <div className="px-2 py-1 bg-[#F1F3F5] rounded-full text-xs font-medium text-[#333D4B]">
+                          {match.level}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* 지도 컨트롤 버튼 */}
-        <div className="absolute bottom-24 right-4 flex flex-col space-y-2 z-10">
-          <button
-            className="bg-white rounded-full w-12 h-12 shadow-md flex items-center justify-center text-[#191F28] text-xl font-bold"
-            onClick={() => map && map.setLevel(map.getLevel() - 1)}
-          >
-            +
-          </button>
-          <button
-            className="bg-white rounded-full w-12 h-12 shadow-md flex items-center justify-center text-[#191F28] text-xl font-bold"
-            onClick={() => map && map.setLevel(map.getLevel() + 1)}
-          >
-            -
-          </button>
-          <button
-            className="bg-white rounded-full w-12 h-12 shadow-md flex items-center justify-center"
-            onClick={() => {
-              // 현재 위치로 이동하는 기능 (실제로는 고정 위치로 이동)
-              if (map) {
-                map.setCenter(new window.kakao.maps.LatLng(37.504, 127.049));
-              }
-            }}
-          >
-            <FiMapPin className="text-[#3182F6]" size={20} />
-          </button>
+        {/* 지도 영역 - 모바일에서는 전체 화면, 데스크톱에서는 우측 영역 (남은 공간 전체) */}
+        <div
+          className={`
+            ${viewMode === "list" ? "hidden md:block" : "block"} 
+            fixed md:static 
+            top-0 left-0 right-0 bottom-0 
+            w-full md:w-[calc(100%-420px)]
+            h-full
+            z-0 md:z-5
+          `}
+          style={{ minHeight: "100%", backgroundColor: "#000" }}
+        >
+          {mapError ? (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 p-4">
+              <div className="bg-white rounded-lg shadow-md p-6 max-w-md text-center">
+                <div className="text-red-500 mb-4 text-5xl flex justify-center">
+                  <FiMapPin />
+                </div>
+                <h3 className="text-lg font-bold text-red-500 mb-2">
+                  카카오맵 로드 오류
+                </h3>
+                <p className="text-gray-700 mb-4">{mapError}</p>
+                <div className="text-sm text-gray-500 mb-4">
+                  <p className="mb-2">문제 해결 방법:</p>
+                  <ul className="text-left list-disc pl-5">
+                    <li>
+                      카카오 개발자 사이트에서 현재 도메인(-)이 등록되어 있는지
+                      확인하세요.
+                    </li>
+                    <li>API 키가 올바른지 확인하세요.</li>
+                    <li>브라우저 콘솔에서 추가 오류 메시지를 확인하세요.</li>
+                  </ul>
+                </div>
+                <button
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
+                  onClick={() => window.location.reload()}
+                >
+                  페이지 새로고침
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              ref={mapRef}
+              id="kakao-map"
+              className="w-full h-full"
+              style={{
+                width: "100%",
+                height: "100%",
+                backgroundColor: "#f8f9fa",
+                position: "relative",
+              }}
+            />
+          )}
+
+          {/* 지도 위에 떠 있는 검색 바 */}
+          <div className="absolute top-4 left-0 right-0 mx-auto w-[90%] max-w-md z-10">
+            <div className="bg-white rounded-full shadow-md px-4 py-3 flex items-center">
+              <FiSearch className="text-[#3182F6] mr-3" size={20} />
+              <input
+                type="text"
+                placeholder="풋살장, 지역명 검색"
+                className="flex-1 outline-none text-[#191F28] bg-transparent"
+              />
+            </div>
+          </div>
+
+          {/* 지도 컨트롤 버튼 */}
+          <div className="absolute bottom-24 right-4 flex flex-col space-y-2 z-10">
+            <button
+              className="bg-white rounded-full w-12 h-12 shadow-md flex items-center justify-center text-[#191F28] text-xl font-bold"
+              onClick={() => map && map.setLevel(map.getLevel() - 1)}
+            >
+              +
+            </button>
+            <button
+              className="bg-white rounded-full w-12 h-12 shadow-md flex items-center justify-center text-[#191F28] text-xl font-bold"
+              onClick={() => map && map.setLevel(map.getLevel() + 1)}
+            >
+              -
+            </button>
+            <button
+              className="bg-white rounded-full w-12 h-12 shadow-md flex items-center justify-center"
+              onClick={() => {
+                // 현재 위치로 이동하는 기능 (실제로는 고정 위치로 이동)
+                if (map) {
+                  map.setCenter(new window.kakao.maps.LatLng(37.504, 127.049));
+                }
+              }}
+            >
+              <FiMapPin className="text-[#3182F6]" size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
