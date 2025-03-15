@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import {
   FiMapPin,
@@ -9,6 +9,7 @@ import {
   FiSearch,
   FiList,
   FiMap,
+  FiMenu,
 } from "react-icons/fi";
 
 // 카카오맵 API 타입 정의
@@ -57,6 +58,7 @@ const Home = () => {
   // 마커를 상태가 아닌 ref로 관리하여 무한 렌더링 방지
   const markersRef = useRef<KakaoMarker[]>([]);
   const [mapError, setMapError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   // 화면 크기에 따라 기본 뷰 모드 설정 (모바일에서만 사용)
   useEffect(() => {
